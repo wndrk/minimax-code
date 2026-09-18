@@ -529,6 +529,7 @@ export async function createRuntimeServices(
       application: modelProviderApplication,
       providers: modelSystem.providers,
       listProviderPresets: modelSystem.listProviderPresets,
+      anthropicOauth: modelSystem.anthropicOauth,
       oauth: modelSystem.oauth,
     },
   });

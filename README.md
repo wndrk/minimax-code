@@ -92,6 +92,10 @@ mcode provider add --name my-provider --base-url https://example.com/v1 \
 mcode
 ```
 
+Anthropic Claude Pro/Max and OpenAI Codex OAuth are available as opt-in provider connections; Z.ai
+GLM Coding Plan is available through the provider presets. See
+[Fork provider integrations](docs/fork-provider-integrations.md) for setup and upstream-sync notes.
+
 Supported API formats: `openai-completions`, `openai-responses`, and `anthropic-messages`. See the [model examples](docs/examples.md#2-choose-your-own-model) for environment variable setup, connection checks, and model overrides for a single run.
 
 </details>

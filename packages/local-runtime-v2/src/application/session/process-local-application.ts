@@ -2,6 +2,7 @@ import type { GlobalEvent } from '@mavis/shared/global-events';
 import { isLegacyManagedMinimaxProvider } from '@mavis/config';
 
 import type {
+  AnthropicOAuthManager,
   CodexOAuthManager,
   LocalModelProviderService,
   ModelSystemOwner,
@@ -31,6 +32,10 @@ export interface ProcessLocalApplicationOptions {
     readonly application: Pick<ModelProviderApplication, 'list' | 'select'>;
     readonly providers: LocalModelProviderService;
     readonly listProviderPresets: ModelSystemOwner['listProviderPresets'];
+    readonly anthropicOauth?: Pick<
+      AnthropicOAuthManager,
+      'getStatus' | 'startLogin' | 'cancelLogin'
+    >;
     readonly oauth: Pick<CodexOAuthManager, 'getStatus' | 'startLogin' | 'cancelLogin'>;
   };
   readonly peripherals: Required<
@@ -127,6 +132,22 @@ export function createProcessLocalApplication(
     },
     modelProviders: {
       listProviderPresets: () => options.modelProvider.listProviderPresets(),
+      getAnthropicOAuthStatus: async () =>
+        options.modelProvider.anthropicOauth?.getStatus() ?? {
+          state: 'hidden',
+          providerId: 'anthropic',
+        },
+      startAnthropicOAuthLogin: () => {
+        if (!options.modelProvider.anthropicOauth) {
+          throw new Error('Anthropic OAuth is unavailable.');
+        }
+        return options.modelProvider.anthropicOauth.startLogin();
+      },
+      cancelAnthropicOAuthLogin: async (loginId) =>
+        options.modelProvider.anthropicOauth?.cancelLogin(loginId) ?? {
+          state: 'hidden',
+          providerId: 'anthropic',
+        },
       getCodexOAuthStatus: async () => options.modelProvider.oauth.getStatus(),
       startCodexOAuthLogin: (input) => options.modelProvider.oauth.startLogin(input),
       cancelCodexOAuthLogin: async (loginId) => options.modelProvider.oauth.cancelLogin(loginId),

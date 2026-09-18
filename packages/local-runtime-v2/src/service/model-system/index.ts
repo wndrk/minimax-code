@@ -32,8 +32,10 @@ export {
   type InitializeModelSystemOptions,
   type ModelSystemOwner,
 } from './initialize.js';
+export * from './anthropic-oauth.js';
 export * from './codex-oauth.js';
 export {
+  ANTHROPIC_OAUTH_PROVIDER_ID,
   CUSTOM_PROVIDER_ID_PREFIX,
   isModelProviderApi,
   MANAGED_MINIMAX_PROVIDER_ID,

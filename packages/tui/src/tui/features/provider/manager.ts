@@ -33,6 +33,7 @@ export interface TuiProviderManagerOptions {
   onRefresh(): Promise<McodeProviderSnapshot>;
   onRefreshModels?(provider: McodeProviderView): Promise<number>;
   onTest(providerId: string, modelId?: string): Promise<McodeProviderTestResult>;
+  onConnectAnthropic?(): void;
   onConnectCodex?(): void;
   onSaveCustom?(input: McodeSaveProviderCandidateInput): Promise<McodeSaveProviderCandidateResult>;
   onSetMiniMaxApiKey(apiKey: string): Promise<void>;
@@ -273,6 +274,10 @@ export class TuiProviderManager implements Component, Focusable {
   private async useSelected(): Promise<void> {
     const provider = this.selectedProvider();
     if (!provider) return;
+    if (provider.kind === 'anthropic-oauth') {
+      this.connectAnthropic(provider);
+      return;
+    }
     if (provider.kind === 'codex-oauth') {
       await this.connectCodex(provider);
       return;
@@ -314,6 +319,10 @@ export class TuiProviderManager implements Component, Focusable {
     }
     if (provider.kind === 'codex-oauth') {
       this.setStatus('Use Enter or Space on the Codex row to start sign-in.', 'info');
+      return;
+    }
+    if (provider.kind === 'anthropic-oauth') {
+      this.setStatus('Use Enter or Space on the Anthropic row to start sign-in.', 'info');
       return;
     }
     if (provider.readOnly || !this.options.onSaveCustom) {
@@ -369,6 +378,18 @@ export class TuiProviderManager implements Component, Focusable {
     this.options.onConnectCodex();
   }
 
+  private connectAnthropic(provider: McodeProviderView): void {
+    if (provider.status?.state === 'connected') {
+      this.setStatus('Anthropic is already connected.', 'info');
+      return;
+    }
+    if (!this.options.onConnectAnthropic) {
+      this.setStatus('Anthropic sign-in is unavailable in this host.', 'error');
+      return;
+    }
+    this.options.onConnectAnthropic();
+  }
+
   private startMiniMaxKey(replacing = false): void {
     this.mode = { kind: 'minimax-key', replacing };
     this.status = undefined;
@@ -401,8 +422,8 @@ export class TuiProviderManager implements Component, Focusable {
   private async testSelected(): Promise<void> {
     const provider = this.selectedProvider();
     if (!provider) return;
-    if (provider.kind === 'codex-oauth') {
-      this.setStatus('Codex OAuth connectivity is managed by its sign-in flow.', 'info');
+    if (provider.kind === 'codex-oauth' || provider.kind === 'anthropic-oauth') {
+      this.setStatus(`${provider.name} OAuth connectivity is managed by its sign-in flow.`, 'info');
       return;
     }
     if (provider.kind === 'minimax-oauth') {
@@ -507,7 +528,7 @@ function isSelectedSource(provider: McodeProviderView): boolean {
 }
 
 function markerFor(provider: McodeProviderView): string {
-  if (provider.kind === 'codex-oauth') {
+  if (provider.kind === 'codex-oauth' || provider.kind === 'anthropic-oauth') {
     return provider.status?.state === 'connected' ? '✓' : '○';
   }
   if (provider.kind === 'custom') return provider.enabled ? '○' : '–';
@@ -522,6 +543,14 @@ function providerModelList(provider: McodeProviderView): string | undefined {
 }
 
 function providerDetail(provider: McodeProviderView): string {
+  if (provider.kind === 'anthropic-oauth') {
+    if (provider.status?.state === 'connected') return 'Connected with Anthropic OAuth';
+    if (provider.status?.state === 'pending') return 'Sign-in pending · Enter or Space to continue';
+    if (provider.status?.state === 'failed') {
+      return `${provider.status.lastErrorMessage ?? 'Sign-in failed'} · Enter or Space to retry`;
+    }
+    return 'Not connected · Enter or Space to connect';
+  }
   if (provider.kind === 'codex-oauth') {
     if (provider.status?.state === 'connected') return 'Connected with OpenAI OAuth';
     if (provider.status?.state === 'pending') {
@@ -549,7 +578,7 @@ function providerDetail(provider: McodeProviderView): string {
 }
 
 function providerSummary(provider: McodeProviderView): string {
-  if (provider.kind === 'codex-oauth') {
+  if (provider.kind === 'codex-oauth' || provider.kind === 'anthropic-oauth') {
     if (provider.status?.state === 'connected') return 'Connected';
     if (provider.status?.state === 'pending') return 'Waiting for sign-in';
     if (provider.status?.state === 'failed') return 'Sign-in failed';

@@ -1,4 +1,5 @@
 import type {
+  McodeAnthropicOAuthStatus,
   McodeCodexOAuthStartResult,
   McodeCodexOAuthLoginOptions,
   McodeCodexOAuthStatus,
@@ -19,18 +20,32 @@ export class McodeProviderApplication {
   constructor(private readonly port: McodeProviderRuntimePort) {}
 
   async snapshot(
-    options: { readonly includeCodexOAuth?: boolean } = {},
+    options: {
+      readonly includeProviderOAuth?: boolean;
+      readonly includeCodexOAuth?: boolean;
+    } = {},
   ): Promise<McodeProviderSnapshot> {
-    const [customProviders, minimaxStatus, minimaxModelSource, codexOAuthStatus] =
-      await Promise.all([
-        this.port.listUserModelProviders(),
-        this.port.getMiniMaxApiKeyStatus(),
-        this.port.getMiniMaxModelSource(),
-        options.includeCodexOAuth ? this.port.getCodexOAuthStatus() : undefined,
-      ]);
+    const includeProviderOAuth = options.includeProviderOAuth === true;
+    const includeCodexOAuth = includeProviderOAuth || options.includeCodexOAuth === true;
+    const [
+      customProviders,
+      minimaxStatus,
+      minimaxModelSource,
+      anthropicOAuthStatus,
+      codexOAuthStatus,
+    ] = await Promise.all([
+      this.port.listUserModelProviders(),
+      this.port.getMiniMaxApiKeyStatus(),
+      this.port.getMiniMaxModelSource(),
+      includeProviderOAuth ? this.port.getAnthropicOAuthStatus?.() : undefined,
+      includeCodexOAuth ? this.port.getCodexOAuthStatus() : undefined,
+    ]);
     return {
       minimaxModelSource,
       providers: [
+        ...(!anthropicOAuthStatus || anthropicOAuthStatus.state === 'hidden'
+          ? []
+          : [normalizeAnthropicOAuthProvider(anthropicOAuthStatus)]),
         ...(!codexOAuthStatus || codexOAuthStatus.state === 'hidden'
           ? []
           : [normalizeCodexOAuthProvider(codexOAuthStatus)]),
@@ -59,6 +74,27 @@ export class McodeProviderApplication {
         ...customProviders.map(normalizeCustomProvider),
       ],
     };
+  }
+
+  connectAnthropicOAuth(): Promise<McodeAnthropicOAuthStatus> {
+    if (!this.port.startAnthropicOAuthLogin) {
+      throw new Error('Anthropic OAuth is unavailable in this host.');
+    }
+    return this.port.startAnthropicOAuthLogin();
+  }
+
+  getAnthropicOAuthStatus(): Promise<McodeAnthropicOAuthStatus> {
+    if (!this.port.getAnthropicOAuthStatus) {
+      return Promise.resolve({ state: 'hidden', providerId: 'anthropic' });
+    }
+    return this.port.getAnthropicOAuthStatus();
+  }
+
+  cancelAnthropicOAuthLogin(loginId: string): Promise<McodeAnthropicOAuthStatus> {
+    if (!this.port.cancelAnthropicOAuthLogin) {
+      return Promise.resolve({ state: 'hidden', providerId: 'anthropic' });
+    }
+    return this.port.cancelAnthropicOAuthLogin(loginId);
   }
 
   setMiniMaxSource(source: McodeMiniMaxModelSource): Promise<McodeMiniMaxModelSource> {
@@ -153,6 +189,23 @@ function normalizeCodexOAuthProvider(status: McodeCodexOAuthStatus): McodeProvid
     providerId: status.providerId,
     name: 'OpenAI Codex',
     kind: 'codex-oauth',
+    active: false,
+    enabled: true,
+    readOnly: true,
+    hasApiKey: false,
+    models: [],
+    status: {
+      state: status.state,
+      ...(status.error ? { lastErrorMessage: status.error } : {}),
+    },
+  };
+}
+
+function normalizeAnthropicOAuthProvider(status: McodeAnthropicOAuthStatus): McodeProviderView {
+  return {
+    providerId: status.providerId,
+    name: 'Anthropic',
+    kind: 'anthropic-oauth',
     active: false,
     enabled: true,
     readOnly: true,

@@ -21,6 +21,7 @@ import type {
 } from "../port.js";
 import type { TuiRuntimeAccessContext } from "./access-context.js";
 import type {
+  McodeAnthropicOAuthStatus,
   McodeCreateProviderInput,
   McodeCodexOAuthStartResult,
   McodeCodexOAuthLoginOptions,
@@ -139,6 +140,26 @@ export class TuiProductAccess {
     return (await this.context
       .service("provider.codex-oauth.status")
       .getCodexOAuthStatus()) as McodeCodexOAuthStatus;
+  }
+
+  async getAnthropicOAuthStatus(): Promise<McodeAnthropicOAuthStatus> {
+    return (await this.context
+      .service("provider.anthropic-oauth.status")
+      .getAnthropicOAuthStatus()) as McodeAnthropicOAuthStatus;
+  }
+
+  async startAnthropicOAuthLogin(): Promise<McodeAnthropicOAuthStatus> {
+    return (await this.context
+      .service("provider.anthropic-oauth.start")
+      .startAnthropicOAuthLogin()) as McodeAnthropicOAuthStatus;
+  }
+
+  async cancelAnthropicOAuthLogin(
+    loginId: string,
+  ): Promise<McodeAnthropicOAuthStatus> {
+    return (await this.context
+      .service("provider.anthropic-oauth.cancel")
+      .cancelAnthropicOAuthLogin(loginId)) as McodeAnthropicOAuthStatus;
   }
 
   async startCodexOAuthLogin(

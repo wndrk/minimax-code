@@ -8,6 +8,7 @@ import {
 
 import { LocalModelCache } from './catalog/model-cache.js';
 import { ProviderPresetCatalog } from './catalog/provider-presets/provider-presets.service.js';
+import { AnthropicOAuthManager } from './anthropic-oauth.js';
 import { CodexOAuthManager } from './codex-oauth.js';
 import { ModelDiscoveryClient } from './connectivity/discover-models.js';
 import { ModelConnectionTester } from './connectivity/test-connection.js';
@@ -33,6 +34,7 @@ export interface InitializeModelSystemOptions {
 export interface ModelSystemOwner {
   readonly resolver: LocalModelResolver;
   readonly providers: LocalModelProviderService;
+  readonly anthropicOauth: AnthropicOAuthManager;
   readonly oauth: CodexOAuthManager;
   readonly listProviderPresets: () => Promise<ByokProviderPresetView[]>;
 }
@@ -80,6 +82,12 @@ export function initializeModelSystem(options: InitializeModelSystemOptions): Mo
     updateByokConfig: options.config.updateByok,
     removeLegacyProvider: options.config.removeProvider,
   });
+  const anthropicOauth = new AnthropicOAuthManager({
+    configGetter: options.config.read,
+    fetchImpl: options.fetchImpl,
+    updateByokConfig: options.config.updateByok,
+    removeLegacyProvider: options.config.removeProvider,
+  });
   const providers = new LocalModelProviderService({
     configGetter: options.config.read,
     updateByokConfig: options.config.updateByok,
@@ -87,13 +95,17 @@ export function initializeModelSystem(options: InitializeModelSystemOptions): Mo
     tester: new ModelConnectionTester({ fetchImpl: options.fetchImpl }),
     discoverer: new ModelDiscoveryClient(options.fetchImpl),
     compareAndSetModelContext: options.config.compareAndSetModelContext,
-    removeProviderCredentials: (providerKey) => oauth.removeCredentials(providerKey),
+    removeProviderCredentials: (providerKey) =>
+      providerKey === 'anthropic'
+        ? anthropicOauth.removeCredentials(providerKey)
+        : oauth.removeCredentials(providerKey),
     selectModel: (modelKey) => options.config.setDefaultModel(modelKey),
     ...(options.implicitCustomProviderThinking ? { implicitCustomProviderThinking: true } : {}),
   });
   return {
     resolver,
     providers,
+    anthropicOauth,
     oauth,
     listProviderPresets: () => providerPresets.listProviderPresets(),
   };

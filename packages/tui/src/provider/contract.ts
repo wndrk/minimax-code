@@ -11,7 +11,8 @@ export function isModelProviderApiFormat(value: unknown): value is McodeProvider
   return typeof value === 'string' && MCODE_PROVIDER_API_FORMAT_SET.has(value);
 }
 export type McodeMiniMaxModelSource = 'token_plan' | 'minimax_api_key';
-export type McodeProviderKind = 'codex-oauth' | 'minimax-oauth' | 'minimax-api-key' | 'custom';
+export type McodeProviderKind =
+  'anthropic-oauth' | 'codex-oauth' | 'minimax-oauth' | 'minimax-api-key' | 'custom';
 
 export interface McodeProviderStatus {
   readonly state: string;
@@ -108,6 +109,17 @@ export interface McodeCodexOAuthStartResult extends McodeCodexOAuthStatus {
   readonly authUrl?: string;
 }
 
+export type McodeAnthropicOAuthState =
+  'hidden' | 'disconnected' | 'pending' | 'connected' | 'failed';
+
+export interface McodeAnthropicOAuthStatus {
+  readonly state: McodeAnthropicOAuthState;
+  readonly providerId: 'anthropic';
+  readonly error?: string;
+  readonly loginId?: string;
+  readonly authUrl?: string;
+}
+
 export interface McodeCreateProviderInput {
   readonly name?: string;
   readonly baseUrl: string;
@@ -163,6 +175,9 @@ export interface McodeProviderRuntimePort {
     input: McodeDiscoverProviderModelsInput,
   ): Promise<readonly McodeProviderModel[]>;
   listProviderPresets(): Promise<readonly McodeProviderTemplate[]>;
+  getAnthropicOAuthStatus?(): Promise<McodeAnthropicOAuthStatus>;
+  startAnthropicOAuthLogin?(): Promise<McodeAnthropicOAuthStatus>;
+  cancelAnthropicOAuthLogin?(loginId: string): Promise<McodeAnthropicOAuthStatus>;
   getCodexOAuthStatus(): Promise<McodeCodexOAuthStatus>;
   startCodexOAuthLogin(options?: McodeCodexOAuthLoginOptions): Promise<McodeCodexOAuthStartResult>;
   cancelCodexOAuthLogin(loginId: string): Promise<McodeCodexOAuthStatus>;
