@@ -61,6 +61,24 @@ const snapshotWithCodex: McodeProviderSnapshot = {
   ],
 };
 
+const snapshotWithAnthropic: McodeProviderSnapshot = {
+  ...snapshot,
+  providers: [
+    {
+      providerId: "anthropic",
+      name: "Anthropic",
+      kind: "anthropic-oauth",
+      active: false,
+      enabled: true,
+      readOnly: true,
+      hasApiKey: false,
+      status: { state: "disconnected" },
+      models: [],
+    },
+    ...snapshot.providers,
+  ],
+};
+
 function withSource(
   source: "token_plan" | "minimax_api_key",
 ): McodeProviderSnapshot {
@@ -100,6 +118,22 @@ function createManager(
 }
 
 describe("TuiProviderManager", () => {
+  it("renders and starts the Anthropic OAuth flow from its provider row", async () => {
+    const onConnectAnthropic = vi.fn();
+    const manager = createManager({
+      snapshot: snapshotWithAnthropic,
+      onConnectAnthropic,
+    });
+
+    manager.handleInput("\u001b[A");
+    const rendered = stripAnsi(manager.render(90).join("\n"));
+    expect(rendered).toContain("Anthropic");
+    expect(rendered).toContain("Not connected · Enter or Space to connect");
+    manager.handleInput("\r");
+
+    await vi.waitFor(() => expect(onConnectAnthropic).toHaveBeenCalledOnce());
+  });
+
   it("starts the independent Codex OAuth flow from its provider row", async () => {
     const onConnectCodex = vi.fn(async () => ({
       state: "pending" as const,

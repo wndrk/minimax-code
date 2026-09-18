@@ -6,6 +6,7 @@ import {
 
 export { CUSTOM_PROVIDER_ID_PREFIX, MANAGED_MINIMAX_PROVIDER_ID, MINIMAX_API_PROVIDER_ID };
 
+export const ANTHROPIC_OAUTH_PROVIDER_ID = 'anthropic';
 export const OPENAI_CODEX_PROVIDER_ID = 'openai-codex';
 
 export const MODEL_PROVIDER_SOURCES = ['provider', 'minimax_api', 'custom_provider'] as const;

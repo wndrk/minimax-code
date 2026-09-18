@@ -6,9 +6,27 @@ import type { CliService } from "@mavis/local-runtime-v2/cli-service";
 import { describe, expect, it, vi } from "vitest";
 
 import { TuiRuntimeAdapter } from "../../src/runtime/adapter.js";
+import { projectEmbeddedRuntimeConfig } from "../../src/runtime/embedded-host.js";
 import { buildTuiSkillCommands } from "../../src/tui/controller/run/active-run-flow.js";
 
 describe("TuiRuntimeAdapter product access", () => {
+  it("preserves explicit public-build OAuth opt-ins", () => {
+    const config = {
+      beta: { anthropicOAuth: true, codexOAuth: true },
+      memory: { enabled: true },
+    };
+
+    const projected = projectEmbeddedRuntimeConfig(
+      config as never,
+      { isInternalBuild: false },
+    );
+
+    expect(projected.beta).toMatchObject({
+      anthropicOAuth: true,
+      codexOAuth: true,
+    });
+  });
+
   it("forwards the shared Provider Presets and Codex OAuth capability", async () => {
     const listProviderPresets = vi.fn(async () => [
       {

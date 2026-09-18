@@ -20,6 +20,7 @@ import {
 import { TuiReportInspectionPanel } from '../../features/inspection/report-panel.js';
 import { TuiModelPicker } from '../../features/model/picker.js';
 import { TuiCodexLogin } from '../../features/auth/codex-login.js';
+import { TuiAnthropicLogin } from '../../features/auth/anthropic-login.js';
 import { TuiProviderManager } from '../../features/provider/manager.js';
 import {
   TuiProviderOnboarding,
@@ -155,6 +156,7 @@ export class TuiFeatureFlow {
   private inspectionPanel: Component | undefined;
   private modelPicker: Component | undefined;
   private providerManager: Component | undefined;
+  private anthropicLogin: TuiAnthropicLogin | undefined;
   private codexLogin: TuiCodexLogin | undefined;
   private providerOnboarding: Component | undefined;
   private transcriptScreen: TuiFeatureScreenHandle | undefined;
@@ -257,6 +259,7 @@ export class TuiFeatureFlow {
 
   stop(): void {
     this.stopped = true;
+    void this.anthropicLogin?.cancel();
     void this.codexLogin?.cancel();
     this.invalidateFeatureLoads({ includeSkillRefresh: true });
     this.modelState.stop();
@@ -898,7 +901,9 @@ export class TuiFeatureFlow {
     const loadSequence = ++this.providerLoadSequence;
     let snapshot;
     try {
-      snapshot = await this.providerApplication.snapshot({ includeCodexOAuth: true });
+      snapshot = await this.providerApplication.snapshot({
+        includeProviderOAuth: true,
+      });
     } catch (error) {
       if (!this.isStopped() && loadSequence === this.providerLoadSequence) {
         this.options.append(
@@ -913,7 +918,9 @@ export class TuiFeatureFlow {
     }
     if (this.isStopped() || loadSequence !== this.providerLoadSequence) return;
     const refresh = async () => {
-      const next = await this.providerApplication.snapshot({ includeCodexOAuth: true });
+      const next = await this.providerApplication.snapshot({
+        includeProviderOAuth: true,
+      });
       // Await the roster before repainting: disabling a provider drops its
       // models, and a stale status line would keep advertising a model the
       // Runtime no longer resolves.
@@ -925,6 +932,10 @@ export class TuiFeatureFlow {
       snapshot,
       onRefresh: refresh,
       onTest: (providerId, modelId) => this.providerApplication.test(providerId, modelId),
+      onConnectAnthropic: () => {
+        this.closeProviderManager();
+        this.showAnthropicLogin();
+      },
       onConnectCodex: () => {
         this.closeProviderManager();
         this.showCodexLogin('provider');
@@ -952,6 +963,44 @@ export class TuiFeatureFlow {
     });
     this.providerManager = manager;
     this.options.surface.show(manager);
+  }
+
+  private showAnthropicLogin(): void {
+    if (this.isStopped()) return;
+    const panel = new TuiAnthropicLogin({
+      application: this.providerApplication,
+      openExternalTarget:
+        this.options.openExternalTarget ?? createTuiExternalTargetOpener(this.options.workspaceDir),
+      onConnected: () => {
+        if (this.anthropicLogin !== panel || this.isStopped()) return;
+        this.closeAnthropicLogin();
+        void this.finishAnthropicLogin();
+      },
+      onClose: () => this.closeAnthropicLogin(),
+      requestRender: this.options.onChanged,
+    });
+    this.anthropicLogin = panel;
+    this.options.surface.show(panel);
+    void panel.resume();
+  }
+
+  private async finishAnthropicLogin(): Promise<void> {
+    try {
+      await this.modelState.refresh();
+      if (this.isStopped()) return;
+      this.options.controller.refreshStatusMetricsNow();
+      this.options.append('Anthropic connected.');
+      await this.showProviderManager();
+    } catch (error) {
+      if (!this.isStopped())
+        this.options.append(
+          formatTuiActionFailure(error, {
+            summary: "Couldn't refresh Anthropic models.",
+            nextStep: 'Reopen /provider to retry.',
+          }),
+          'error',
+        );
+    }
   }
 
   private showCodexLogin(returnTo: 'provider' | 'model'): void {
@@ -1423,6 +1472,7 @@ export class TuiFeatureFlow {
   private closeFeatureSurfaces(): void {
     this.closeModelPicker();
     this.closeProviderManager();
+    this.closeAnthropicLogin();
     this.closeCodexLogin();
     this.closeProviderOnboarding();
     this.closeInspectionPanel();
@@ -1434,6 +1484,7 @@ export class TuiFeatureFlow {
     if (panel === this.inspectionPanel) this.inspectionPanel = undefined;
     if (panel === this.modelPicker) this.modelPicker = undefined;
     if (panel === this.providerManager) this.providerManager = undefined;
+    if (panel === this.anthropicLogin) this.anthropicLogin = undefined;
     if (panel === this.codexLogin) this.codexLogin = undefined;
     if (panel === this.providerOnboarding) this.providerOnboarding = undefined;
   }
@@ -1460,6 +1511,12 @@ export class TuiFeatureFlow {
   private closeCodexLogin(): void {
     const panel = this.codexLogin;
     this.codexLogin = undefined;
+    if (panel) this.options.surface.close(panel);
+  }
+
+  private closeAnthropicLogin(): void {
+    const panel = this.anthropicLogin;
+    this.anthropicLogin = undefined;
     if (panel) this.options.surface.close(panel);
   }
 

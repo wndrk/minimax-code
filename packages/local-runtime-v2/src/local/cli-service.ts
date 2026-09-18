@@ -671,6 +671,27 @@ export class CliService {
     ).listProviderPresets();
   }
 
+  getAnthropicOAuthStatus() {
+    return this.requireCapability(
+      "modelProviders",
+      "Model Provider",
+    ).getAnthropicOAuthStatus();
+  }
+
+  startAnthropicOAuthLogin() {
+    return this.requireCapability(
+      "modelProviders",
+      "Model Provider",
+    ).startAnthropicOAuthLogin();
+  }
+
+  cancelAnthropicOAuthLogin(loginId: string) {
+    return this.requireCapability(
+      "modelProviders",
+      "Model Provider",
+    ).cancelAnthropicOAuthLogin(loginId);
+  }
+
   getCodexOAuthStatus() {
     return this.requireCapability(
       "modelProviders",

@@ -452,6 +452,15 @@ export class TuiRuntimeAdapter implements TuiRuntime {
   listProviderPresets() {
     return this.productAccess.listProviderPresets();
   }
+  getAnthropicOAuthStatus() {
+    return this.productAccess.getAnthropicOAuthStatus();
+  }
+  startAnthropicOAuthLogin() {
+    return this.productAccess.startAnthropicOAuthLogin();
+  }
+  cancelAnthropicOAuthLogin(loginId: string) {
+    return this.productAccess.cancelAnthropicOAuthLogin(loginId);
+  }
   getCodexOAuthStatus() {
     return this.productAccess.getCodexOAuthStatus();
   }

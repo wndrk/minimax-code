@@ -321,6 +321,7 @@ export type * from "./asr.js";
  *   taskHistoryProjectGrouping: false
  *   threadGoal: false
  *   mcodeTools: false
+ *   anthropicOAuth: false
  *   codexOAuth: false
  * ```
  */
@@ -493,6 +494,11 @@ export interface BetaConfig {
    */
   mcodeTools: boolean;
   /**
+   * Anthropic Claude Pro/Max OAuth settings entry. Credentials share Pi's provider credential
+   * store at `<dataDir>/codex-auth.json`; provider configuration stays in `config.yaml`.
+   */
+  anthropicOAuth: boolean;
+  /**
    * OpenAI Codex OAuth settings entry. Enabled by default in internal builds and development
    * environments, regardless of the connected backend environment. Public prod / external staging /
    * Inside / test builds expose the OAuth connection button in desktop model settings via
@@ -643,6 +649,11 @@ export const BETA_FEATURE_DEFS = {
     defaultVisibility: "none",
     defaultBuildEnvironments: ["dev", "test", "staging", "prod"],
     defaultPlatforms: ["darwin", "linux", "win32"],
+    configurableVisibility: "online",
+  },
+  anthropicOAuth: {
+    defaultVisibility: "none",
+    defaultBuildEnvironments: ["dev"],
     configurableVisibility: "online",
   },
   codexOAuth: {

@@ -22,6 +22,7 @@ import type {
 import type { MiniAppSurfaceSummary } from "@mavis/shared/miniapp-surface";
 import type { SessionReportManifest } from "../../service/session-system/index.js";
 import type {
+  AnthropicOAuthStatus,
   ByokProviderPresetView,
   CodexOAuthStartResult,
   CodexOAuthLoginOptions,
@@ -242,6 +243,9 @@ export interface LocalRuntimeApplication {
   };
   readonly modelProviders?: {
     listProviderPresets(): Promise<readonly ByokProviderPresetView[]>;
+    getAnthropicOAuthStatus(): Promise<AnthropicOAuthStatus>;
+    startAnthropicOAuthLogin(): Promise<AnthropicOAuthStatus>;
+    cancelAnthropicOAuthLogin(loginId: string): Promise<AnthropicOAuthStatus>;
     getCodexOAuthStatus(): Promise<CodexOAuthStatus>;
     startCodexOAuthLogin(
       options?: CodexOAuthLoginOptions,

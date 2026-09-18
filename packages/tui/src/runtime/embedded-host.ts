@@ -48,7 +48,8 @@ export function projectEmbeddedRuntimeConfig(
     },
     beta: {
       ...config.beta,
-      codexOAuth: buildIdentity.isInternalBuild,
+      anthropicOAuth: config.beta?.anthropicOAuth === true,
+      codexOAuth: buildIdentity.isInternalBuild || config.beta?.codexOAuth === true,
       mcodeTools: mcodeToolsEnabled && config.beta?.mcodeTools === true,
     },
     memory: {
